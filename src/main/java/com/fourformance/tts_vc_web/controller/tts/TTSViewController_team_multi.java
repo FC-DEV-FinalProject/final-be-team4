@@ -54,9 +54,9 @@ public class TTSViewController_team_multi {
             summary = "TTS 상태 저장",
             description = "TTS 프로젝트 상태를 저장합니다." )
     @PostMapping("/{projectId}/save")
-    public ResponseDto ttsSave(@RequestBody TTSSaveDto ttsSaveDto) {
+    public ResponseDto ttsSave(@PathVariable Long projectId, @RequestBody TTSSaveDto ttsSaveDto) {
+        ttsSaveDto.setProjectId(projectId);
         try {
-            Long projectId;
             if (ttsSaveDto.getProjectId() == null) {
                 // projectId가 null인 경우, 새 프로젝트 생성
                 projectId = ttsService.createNewProject(ttsSaveDto);
