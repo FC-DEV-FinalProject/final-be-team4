@@ -12,6 +12,9 @@ import com.fourformance.tts_vc_web.repository.ConcatStatusHistoryRepository;
 import com.fourformance.tts_vc_web.repository.MemberRepository;
 import com.fourformance.tts_vc_web.service.common.S3Service;
 import lombok.RequiredArgsConstructor;
+import net.bramp.ffmpeg.FFmpeg;
+import net.bramp.ffmpeg.FFprobe;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,23 +39,50 @@ public class ConcatService_team_api {
     private final MemberRepository memberRepository; // 멤버 관련 저장소
 
     private static final Logger LOGGER = Logger.getLogger(ConcatService_team_api.class.getName());
-    private String uploadDir; // 업로드 디렉토리 경로
+
+    @Value("${upload.dir}")
+    private String uploadDir;
+
+    @Value("${ffmpeg.path}")
+    private String ffmpegPath;
 
     /**
-     * 서비스 초기화 메서드: 업로드 디렉토리를 생성합니다.
+     * 서비스 초기화 메서드: 업로드 디렉토리를 생성하고 FFmpeg 경로를 검증합니다.
      */
     @PostConstruct
     public void initialize() {
-        uploadDir = System.getProperty("user.home") + "/uploads";
+        // 업로드 디렉토리 생성
         File uploadFolder = new File(uploadDir);
-
-        // 디렉토리 존재 여부 확인 후 생성
         if (!uploadFolder.exists()) {
             if (!uploadFolder.mkdirs()) {
                 throw new RuntimeException("업로드 디렉토리를 생성할 수 없습니다: " + uploadDir);
             }
         }
         LOGGER.info("업로드 디렉토리가 설정되었습니다: " + uploadDir);
+
+        // FFmpeg 경로 검증
+        File ffmpegFile = new File(ffmpegPath);
+        if (!ffmpegFile.exists() || !ffmpegFile.canExecute()) {
+            throw new RuntimeException("FFmpeg 실행 파일을 찾을 수 없거나 실행 권한이 없습니다: " + ffmpegPath);
+        }
+        LOGGER.info("FFmpeg 경로가 설정되었습니다: " + ffmpegPath);
+
+        // FFmpeg 인스턴스 초기화 (예시)
+        setupFFmpeg();
+    }
+
+    /**
+     * FFmpeg 인스턴스 생성 (예시)
+     */
+    private void setupFFmpeg() {
+        try {
+            FFmpeg ffmpeg = new FFmpeg(ffmpegPath);
+            FFprobe ffprobe = new FFprobe(ffmpegPath.replace("ffmpeg", "ffprobe"));
+            // FFmpeg 및 FFprobe를 사용하는 로직 추가
+        } catch (IOException e) {
+            LOGGER.severe("FFmpeg 초기화 오류: " + e.getMessage());
+            throw new BusinessException(ErrorCode.FFMPEG_INITIALIZATION_FAILED);
+        }
     }
 
     /**

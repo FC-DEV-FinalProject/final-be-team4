@@ -2,13 +2,15 @@ package com.fourformance.tts_vc_web.repository;
 
 import com.fourformance.tts_vc_web.domain.entity.OutputAudioMeta;
 import java.util.List;
+
+import com.fourformance.tts_vc_web.repository.workspace.OutputAudioMetaRepositoryCustom;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface OutputAudioMetaRepository extends JpaRepository<OutputAudioMeta, Long> {
+public interface OutputAudioMetaRepository extends JpaRepository<OutputAudioMeta, Long> ,OutputAudioMetaRepositoryCustom  {
 
     // 최근 생성된 5개의 OutputAudioMeta 조회 (삭제되지 않은 데이터만)
     @Query("SELECT o FROM OutputAudioMeta o " +
