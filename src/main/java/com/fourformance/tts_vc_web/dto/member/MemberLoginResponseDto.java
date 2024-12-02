@@ -16,4 +16,6 @@ public class MemberLoginResponseDto {
     private Long id; // 로그인한 회원의 고유 ID
     private String email; // 로그인한 회원의 이메일
     private String name; // 로그인한 회원의 이름
+    private String phoneNumber; // 로그인한 회원의 전화번호
+
 }

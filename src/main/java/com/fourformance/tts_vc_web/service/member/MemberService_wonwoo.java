@@ -34,6 +34,7 @@ public class MemberService_wonwoo {
                 .id(member.getId())
                 .email(member.getEmail())
                 .name(member.getName())
+                .phoneNumber(member.getPhoneNumber())
                 .build();
     }
 
