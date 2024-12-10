@@ -1,5 +1,6 @@
 package com.fourformance.tts_vc_web.dto.workspace;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fourformance.tts_vc_web.common.constant.APIStatusConst;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
@@ -21,6 +22,10 @@ public class RecentProjectDto {
     private String name;
     private APIStatusConst status;
     private String script; // 스크립트 추가
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime updatedAt;
 }
