@@ -26,9 +26,17 @@ public class SseEmitterService {
         log.info("Subscribing client with ID: " + clientId);
         SseEmitter emitter = createEmitter(clientId);
 
-        // 초기 메시지 전송
-        sendToClient(clientId, "Connection established for clientId: " + clientId);
-        log.info("SSE subscription completed for clientId: " + clientId);
+        try {
+            // 초기 메시지 전송
+            emitter.send(SseEmitter.event()
+                    .id(String.valueOf(clientId))
+                    .name("connection")
+                    .data("Connection established for clientId: " + clientId));
+            log.info("SSE subscription completed for clientId: " + clientId);
+        } catch (IOException exception) {
+            log.warning("Failed to send initial message to clientId: " + clientId);
+            emitterRepository.deleteById(clientId); // 초기 전송 실패 시 Emitter 삭제
+        }
 
         return emitter;
     }
@@ -61,27 +69,29 @@ public class SseEmitterService {
     /**
      * 클라이언트에게 데이터 전송
      */
-    public void sendToClient(Long memberId, Object data) {
-
+    public void sendToClient(Long clientId, Object data) {
+        if (clientId == null) {
+            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
+        }
         if (data == null) {
             data = "No data available";
         }
 
-        if(memberId == null) { throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND); }
-
-
-        SseEmitter emitter = emitterRepository.get(memberId);
+        SseEmitter emitter = emitterRepository.get(clientId);
         if (emitter != null) {
             try {
-                log.info("Sending data to memberId: " + memberId);
-                emitter.send(SseEmitter.event().id(String.valueOf(memberId)).name("taskUpdate").data(data));
+                log.info("Sending data to clientId: " + clientId);
+                emitter.send(SseEmitter.event()
+                        .id(String.valueOf(clientId))
+                        .name("taskUpdate")
+                        .data(data));
             } catch (IOException exception) {
-                log.warning("Failed to send data to memberId: " + memberId + ", removing emitter.");
-                emitterRepository.deleteById(memberId);
+                log.warning("Failed to send data to clientId: " + clientId + ", removing emitter.");
+                emitterRepository.deleteById(clientId);
                 emitter.completeWithError(exception);
             }
         } else {
-            log.warning("No active SSE connection for memberId: " + memberId);
+            log.warning("No active SSE connection for clientId: " + clientId);
         }
     }
 
@@ -94,6 +104,8 @@ public class SseEmitterService {
             emitter.complete();
             emitterRepository.deleteById(clientId);
             log.info("Disconnected clientId: " + clientId);
+        } else {
+            log.warning("No active SSE connection for clientId: " + clientId);
         }
     }
 

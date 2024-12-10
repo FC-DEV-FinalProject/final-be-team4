@@ -148,59 +148,7 @@ public class VCService_TaskJob {
         }
     }
 
-//    @Transactional
-//    public void enqueueVCTasks(VCSaveRequestDto vcReqDto, List<MultipartFile> files, Long memberId) {
-//        // 프로젝트 저장, 디테일 저장
-//        Member member = memberRepository.findById(memberId)
-//                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-//
-//        // Step 2: VC 프로젝트 저장 및 ID 반환, VcDetail 저장
-//        Long projectId = vcService.saveVCProject(vcReqDto, files, member);
-//        if (projectId == null) {
-//            throw new BusinessException(ErrorCode.PROJECT_NOT_FOUND);
-//        }
-//        // vcProject 객체 반환
-//        VCProject vcProject = vcProjectRepository.findById(projectId)
-//                .orElseThrow(() -> new BusinessException(ErrorCode.VC_PROJECT_NOT_FOUND));
-//
-//        // Step 3: 프로젝트 ID로 연관된 VC 디테일(src) 조회
-//        List<VCDetail> vcDetails = vcDetailRepository.findByVcProject_Id(projectId);
-//
-//        // Step 4: VC 디테일 DTO 변환 및 필터링 (체크된 항목만)
-//        List<VCDetailDto> vcDetailDtos = vcDetails.stream()
-//                .filter(vcDetail -> vcDetail.getIsChecked() && !vcDetail.getIsDeleted())
-//                .map(VCDetailDto::createVCDetailDtoWithLocalFileName)
-//                .collect(Collectors.toList());
-//
-//        // Step 5: 저장된 타겟(TRG) 오디오 정보 가져오기
-//        MemberAudioMeta memberAudio = memberAudioMetaRepository.findSelectedAudioByTypeAndMember(AudioType.VC_TRG, memberId);
-//
-//        String voiceId;
-//        if (memberAudio != null) {
-//            // Step 6: 타겟 오디오로 Voice ID 생성
-//            voiceId = processTargetFiles(vcReqDto.getTrgFiles(), memberAudio);
-//
-//        }else{
-//            voiceId = memberAudioMetaRepository.findtrgVoiceIdById(vcReqDto.getTrgFiles().get(0).getS3MemberAudioMetaId());
-//        }
-//
-//        // Step 7: VC 프로젝트에 trg_voice_id 업데이트
-//        updateProjectTargetVoiceId(projectId, voiceId);
-//
-//        // vcDetailDtos에서 하나씩 꺼내서 Task 생성하고 큐에 넣기
-//        for (VCDetailDto detail : vcDetailDtos) {
-//            // dto를 문자열 json으로 변환
-//            String detailJson = convertDetailToJson(detail);
-//
-//            // Task 생성 및 저장
-//            Task task = Task.createTask(vcProject, ProjectType.VC, detailJson);
-//            taskRepository.save(task);
-//
-//            // 메시지 생성 및 RabbitMQ에 전송
-//            VCMsgDto message = createVCMsgDto(detail, task.getId(), memberId, voiceId);
-//            taskProducer.sendTask("AUDIO_VC", message);
-//        }
-//    }
+
 
     /**
      * dto를 문자열 json으로 변환
@@ -334,5 +282,59 @@ public class VCService_TaskJob {
         VCMsgDto message = createVCMsgDto(detail, task.getId(), memberId, voiceId);
         taskProducer.sendTask("AUDIO_VC", message);
     }
+
+    //    @Transactional
+//    public void enqueueVCTasks(VCSaveRequestDto vcReqDto, List<MultipartFile> files, Long memberId) {
+//        // 프로젝트 저장, 디테일 저장
+//        Member member = memberRepository.findById(memberId)
+//                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+//
+//        // Step 2: VC 프로젝트 저장 및 ID 반환, VcDetail 저장
+//        Long projectId = vcService.saveVCProject(vcReqDto, files, member);
+//        if (projectId == null) {
+//            throw new BusinessException(ErrorCode.PROJECT_NOT_FOUND);
+//        }
+//        // vcProject 객체 반환
+//        VCProject vcProject = vcProjectRepository.findById(projectId)
+//                .orElseThrow(() -> new BusinessException(ErrorCode.VC_PROJECT_NOT_FOUND));
+//
+//        // Step 3: 프로젝트 ID로 연관된 VC 디테일(src) 조회
+//        List<VCDetail> vcDetails = vcDetailRepository.findByVcProject_Id(projectId);
+//
+//        // Step 4: VC 디테일 DTO 변환 및 필터링 (체크된 항목만)
+//        List<VCDetailDto> vcDetailDtos = vcDetails.stream()
+//                .filter(vcDetail -> vcDetail.getIsChecked() && !vcDetail.getIsDeleted())
+//                .map(VCDetailDto::createVCDetailDtoWithLocalFileName)
+//                .collect(Collectors.toList());
+//
+//        // Step 5: 저장된 타겟(TRG) 오디오 정보 가져오기
+//        MemberAudioMeta memberAudio = memberAudioMetaRepository.findSelectedAudioByTypeAndMember(AudioType.VC_TRG, memberId);
+//
+//        String voiceId;
+//        if (memberAudio != null) {
+//            // Step 6: 타겟 오디오로 Voice ID 생성
+//            voiceId = processTargetFiles(vcReqDto.getTrgFiles(), memberAudio);
+//
+//        }else{
+//            voiceId = memberAudioMetaRepository.findtrgVoiceIdById(vcReqDto.getTrgFiles().get(0).getS3MemberAudioMetaId());
+//        }
+//
+//        // Step 7: VC 프로젝트에 trg_voice_id 업데이트
+//        updateProjectTargetVoiceId(projectId, voiceId);
+//
+//        // vcDetailDtos에서 하나씩 꺼내서 Task 생성하고 큐에 넣기
+//        for (VCDetailDto detail : vcDetailDtos) {
+//            // dto를 문자열 json으로 변환
+//            String detailJson = convertDetailToJson(detail);
+//
+//            // Task 생성 및 저장
+//            Task task = Task.createTask(vcProject, ProjectType.VC, detailJson);
+//            taskRepository.save(task);
+//
+//            // 메시지 생성 및 RabbitMQ에 전송
+//            VCMsgDto message = createVCMsgDto(detail, task.getId(), memberId, voiceId);
+//            taskProducer.sendTask("AUDIO_VC", message);
+//        }
+//    }
 
 }

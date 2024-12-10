@@ -13,8 +13,6 @@ import com.fourformance.tts_vc_web.domain.entity.*;
 import com.fourformance.tts_vc_web.dto.common.TTSMsgDto;
 import com.fourformance.tts_vc_web.dto.tts.TTSRequestDetailDto;
 import com.fourformance.tts_vc_web.dto.tts.TTSRequestDto;
-import com.fourformance.tts_vc_web.dto.tts.TTSResponseDetailDto;
-import com.fourformance.tts_vc_web.dto.tts.TTSResponseDto;
 import com.fourformance.tts_vc_web.repository.*;
 import com.fourformance.tts_vc_web.service.common.S3Service;
 import com.fourformance.tts_vc_web.service.common.TaskProducer;
@@ -48,108 +46,10 @@ public class TTSService_TaskJob {
     private final GoogleTTSClient googleTTSClient; // GoogleTTSClient 주입
     private final TaskRepository taskRepository;
     private final TaskProducer taskProducer;
-    private final ProjectRepository projectRepository;
     private final ObjectMapper objectMapper; // JSON 직렬화를 위한 ObjectMapper
 
     private static final Logger LOGGER = Logger.getLogger(TTSService_TaskJob.class.getName()); // 로그 기록을 위한 Logger
 
-    /**
-     * 모든 TTS 디테일 처리: 데이터를 생성 또는 업데이트하고 오디오 파일을 생성.
-     *
-     * @param ttsRequestDto 프로젝트와 디테일 데이터를 포함한 DTO
-     * @return 생성된 오디오 파일 경로 리스트
-     */
-    public TTSResponseDto convertAllTtsDetails(TTSRequestDto ttsRequestDto, Long memberId) {
-        LOGGER.info("convertAllTtsDetails 호출: " + ttsRequestDto);
-
-        // 1. 프로젝트 저장 또는 업데이트
-        TTSProject ttsProject = saveOrUpdateProject(ttsRequestDto, memberId);
-
-        // 2. 응답 DTO 생성 및 초기화
-        TTSResponseDto.TTSResponseDtoBuilder responseBuilder = TTSResponseDto.builder()
-                .projectId(ttsProject.getId())
-                .projectName(ttsProject.getProjectName())
-                .globalVoiceStyleId(ttsProject.getVoiceStyle().getId())
-                .fullScript(ttsProject.getFullScript())
-                .globalSpeed(ttsProject.getGlobalSpeed())
-                .globalPitch(ttsProject.getGlobalPitch())
-                .globalVolume(ttsProject.getGlobalVolume())
-                .apiStatus(APIStatusConst.IN_PROGRESS)
-                .ttsDetails(new ArrayList<>());
-
-        // 프로젝트의 TTS 디테일 데이터 처리
-        List<TTSResponseDetailDto> responseDetails = new ArrayList<>();
-
-        int successCount = 0;
-        int failureCount = 0;
-
-        for (TTSRequestDetailDto ttsRequestDetailDto : ttsRequestDto.getTtsDetails()) {
-            // 디테일 데이터 저장 또는 업데이트
-            TTSDetail ttsDetail = saveOrUpdateDetail(ttsRequestDetailDto, ttsProject);
-
-            try {
-                LOGGER.info("TTSDetail 처리 시작: " + ttsRequestDetailDto);
-                // 디테일 처리 및 오디오 파일 경로 저장
-
-                TTSMsgDto ttsMsgDto ;
-
-
-//                Map<String, String> fileUrlMap = processTtsDetail(ttsMsgDto, ttsProject);
-//                String fileUrl = fileUrlMap.get("fileUrl");
-//
-//                // TTSResponseDetailDto 생성 및 추가
-//                TTSResponseDetailDto responseDetail = TTSResponseDetailDto.builder()
-//                        .id(ttsMsgDto.getDetailId())
-//                        .projectId(ttsMsgDto.getProjectId())
-//                        .unitScript(ttsMsgDto.getUnitScript())
-//                        .unitSpeed(ttsMsgDto.getUnitSpeed())
-//                        .unitPitch(ttsMsgDto.getUnitPitch())
-//                        .unitVolume(ttsMsgDto.getUnitVolume())
-//                        .UnitVoiceStyleId(ttsMsgDto.getUnitVoiceStyleId())
-//                        .fileUrl(fileUrl) // 처리된 URL 삽입
-//                        .apiUnitStatus(APIUnitStatusConst.SUCCESS)
-//                        .build();
-//
-//                responseDetails.add(responseDetail);
-//                successCount++;
-                LOGGER.info("TTSDetail 처리 완료: " + ttsRequestDetailDto);
-
-
-            } catch (BusinessException e) {
-                LOGGER.severe("TTSDetail 처리 중 오류 발생: " + ttsRequestDetailDto + ", 메시지: " + e.getMessage());
-                // 실패한 디테일에 대한 실패 응답 추가
-                TTSResponseDetailDto failedDetail = TTSResponseDetailDto.builder()
-                        .id(ttsRequestDetailDto.getId())
-                        .projectId(ttsProject.getId())
-                        .unitScript(ttsRequestDetailDto.getUnitScript())
-//                        .errorMessage(e.getMessage())
-                        .apiUnitStatus(APIUnitStatusConst.FAILURE)
-                        .build();
-                responseDetails.add(failedDetail);
-                failureCount++;
-                // 계속 진행
-            }
-        }
-
-        // 전체 API 상태 업데이트
-        if (failureCount == 0) {
-            ttsProject.updateAPIStatus(APIStatusConst.SUCCESS);
-            responseBuilder.apiStatus(APIStatusConst.SUCCESS);
-        } else if (successCount == 0) {
-            ttsProject.updateAPIStatus(APIStatusConst.FAILURE);
-            responseBuilder.apiStatus(APIStatusConst.FAILURE);
-        } else {
-            ttsProject.updateAPIStatus(APIStatusConst.PARTIAL_FAILURE);
-            responseBuilder.apiStatus(APIStatusConst.PARTIAL_FAILURE);
-        }
-        ttsProjectRepository.save(ttsProject);
-
-        // 응답 DTO에 디테일 정보 추가
-        responseBuilder.ttsDetails(responseDetails);
-
-        LOGGER.info("convertAllTtsDetails 완료: 생성된 ResponseDto = " + responseBuilder.build());
-        return responseBuilder.build();
-    }
 
     /**
      * 프로젝트 저장 또는 업데이트
@@ -463,43 +363,6 @@ public class TTSService_TaskJob {
         }
     }
 
-//    @Transactional(isolation = Isolation.SERIALIZABLE, propagation = Propagation.REQUIRED)
-//    public void enqueueTTSBatchTasks(TTSRequestDto ttsRequestDto, Long memberId) {
-//        // 요청 데이터 유효성 검사
-//        validateRequestData(ttsRequestDto);
-//
-//        // 프로젝트 저장
-//        TTSProject ttsProject = saveOrUpdateProject(ttsRequestDto, memberId);
-//
-//
-//        // 디테일별 작업 처리
-//        for (TTSRequestDetailDto detail : ttsRequestDto.getTtsDetails()) {
-//            // 디테일 저장
-//            TTSDetail ttsDetail = saveOrUpdateDetail(detail, ttsProject);
-//
-//            // 엔티티를 DTO로 변환
-//            TTSRequestDetailDto updatedDetailDto = convertToDto(ttsDetail);
-//
-//            // 디테일 DTO를 JSON으로 변환
-//            String detailJson = convertDetailToJson(updatedDetailDto);
-//            System.out.println("detailJson = " + detailJson);
-//
-//            // Task 생성 및 저장
-//            Task task = Task.createTask(ttsProject, ProjectType.TTS, detailJson);
-//            taskRepository.save(task);
-//            taskRepository.flush();
-//
-//            Task findTask = taskRepository.findById(task.getId())
-//                    .orElseThrow(() -> new BusinessException(ErrorCode.TASK_NOT_FOUND));
-//
-//
-//            System.out.println("task.getId() = " + findTask.getId());
-//
-//            // 메시지 생성 및 RabbitMQ에 전송
-//            TTSMsgDto message = createTTSMsgDto(updatedDetailDto, findTask.getId());
-//            taskProducer.sendTask("AUDIO_TTS", message);
-//        }
-//    }
 
     /**
      * 요청 데이터 유효성 검사
@@ -612,6 +475,44 @@ public class TTSService_TaskJob {
         return taskRepository.findById(task.getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.TASK_NOT_FOUND));
     }
+
+    //    @Transactional(isolation = Isolation.SERIALIZABLE, propagation = Propagation.REQUIRED)
+//    public void enqueueTTSBatchTasks(TTSRequestDto ttsRequestDto, Long memberId) {
+//        // 요청 데이터 유효성 검사
+//        validateRequestData(ttsRequestDto);
+//
+//        // 프로젝트 저장
+//        TTSProject ttsProject = saveOrUpdateProject(ttsRequestDto, memberId);
+//
+//
+//        // 디테일별 작업 처리
+//        for (TTSRequestDetailDto detail : ttsRequestDto.getTtsDetails()) {
+//            // 디테일 저장
+//            TTSDetail ttsDetail = saveOrUpdateDetail(detail, ttsProject);
+//
+//            // 엔티티를 DTO로 변환
+//            TTSRequestDetailDto updatedDetailDto = convertToDto(ttsDetail);
+//
+//            // 디테일 DTO를 JSON으로 변환
+//            String detailJson = convertDetailToJson(updatedDetailDto);
+//            System.out.println("detailJson = " + detailJson);
+//
+//            // Task 생성 및 저장
+//            Task task = Task.createTask(ttsProject, ProjectType.TTS, detailJson);
+//            taskRepository.save(task);
+//            taskRepository.flush();
+//
+//            Task findTask = taskRepository.findById(task.getId())
+//                    .orElseThrow(() -> new BusinessException(ErrorCode.TASK_NOT_FOUND));
+//
+//
+//            System.out.println("task.getId() = " + findTask.getId());
+//
+//            // 메시지 생성 및 RabbitMQ에 전송
+//            TTSMsgDto message = createTTSMsgDto(updatedDetailDto, findTask.getId());
+//            taskProducer.sendTask("AUDIO_TTS", message);
+//        }
+//    }
 
 }
 
