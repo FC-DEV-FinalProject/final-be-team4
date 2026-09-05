@@ -179,3 +179,6 @@ TTS, VC, Concat 음성 처리 웹 사이트를 개발하는 프로젝트입니�
 
 - https://www.notion.so/4-b105aaddd7bc42c9842b92c98e465b67
 
+
+
+<!-- Security scan triggered at 2026-09-05 07:44:12 -->
