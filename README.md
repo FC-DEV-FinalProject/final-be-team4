@@ -182,3 +182,5 @@ TTS, VC, Concat 음성 처리 웹 사이트를 개발하는 프로젝트입니�
 
 
 <!-- Security scan triggered at 2026-09-05 07:44:12 -->
+
+<!-- Security scan triggered at 2026-10-07 11:51:13 -->
